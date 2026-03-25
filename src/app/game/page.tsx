@@ -6,11 +6,13 @@ import { PUZZLES } from "@/data/puzzles";
 import { useRouter } from "next/navigation";
 
 export default function GameHq() {
-  const { puzzleIndex, advancePuzzle, role, finishGame, startTime, endTime, teamName } = useGame();
+  const { puzzleIndex, advancePuzzle, role, finishGame, startTime, endTime, levelStartTime, teamName } = useGame();
   const router = useRouter();
   const [answerInput, setAnswerInput] = useState("");
   const [error, setError] = useState(false);
   const [solved, setSolved] = useState(false);
+  const [finalScore, setFinalScore] = useState<number | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
   if (!role) {
     if (typeof window !== 'undefined') {
@@ -26,15 +28,22 @@ export default function GameHq() {
   useEffect(() => {
     if (isComplete && !endTime) {
       finishGame();
-      const totalTime = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
       
+      // Fetch final score
       fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ teamName, role, timeElapsed: totalTime })
-      }).catch(err => console.error('Failed to save score:', err));
+        body: JSON.stringify({ action: 'get_team_score', teamName })
+      })
+      .then(res => res.json())
+      .then(data => {
+         if (data.success) {
+           setFinalScore(data.teamScore);
+         }
+      })
+      .catch(err => console.error('Failed to get final score:', err));
     }
-  }, [isComplete, endTime, finishGame, startTime, teamName, role]);
+  }, [isComplete, endTime, finishGame, teamName]);
 
   // Final Success State
   if (isComplete) {
@@ -53,9 +62,18 @@ export default function GameHq() {
         </div>
         
         {endTime && (
-          <div style={{ display: 'inline-block', padding: '1.5rem 3rem', border: '1px dashed var(--accent-cyan)', background: 'rgba(14, 165, 233, 0.1)' }}>
-            <div className="terminal-text" style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '0.5rem' }}>COMPLETION_TIME:</div>
-            <div className="glow-text-cyan" style={{ fontSize: '2.5rem', fontWeight: 'bold', letterSpacing: '4px' }}>[{minutes}:{seconds}]</div>
+          <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', marginTop: '2rem' }}>
+            <div style={{ padding: '1.5rem 3rem', border: '1px dashed var(--accent-cyan)', background: 'rgba(14, 165, 233, 0.1)' }}>
+              <div className="terminal-text" style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '0.5rem' }}>COMPLETION_TIME:</div>
+              <div className="glow-text-cyan" style={{ fontSize: '2.5rem', fontWeight: 'bold', letterSpacing: '4px' }}>[{minutes}:{seconds}]</div>
+            </div>
+            
+            {finalScore !== null && (
+              <div style={{ padding: '1.5rem 3rem', border: '1px solid var(--accent-green)', background: 'rgba(34, 197, 94, 0.1)' }}>
+                <div className="terminal-text" style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '0.5rem', color: 'var(--accent-green)' }}>TEAM_SCORE:</div>
+                <div className="glow-text-green" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{finalScore} / 50 Pts</div>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -75,10 +93,52 @@ export default function GameHq() {
     }
   };
 
-  const handleNext = () => {
+  const saveLevelScore = async (isSolved: boolean) => {
+    const timeTaken = levelStartTime ? Math.floor((Date.now() - levelStartTime) / 1000) : 0;
+    let score = 0;
+    if (isSolved) {
+      if (timeTaken <= 180) score = 5;       // < 3 mins
+      else if (timeTaken <= 300) score = 4;  // < 5 mins
+      else if (timeTaken <= 600) score = 3;  // < 10 mins
+      else score = 2;                        // > 10 mins
+    }
+
+    try {
+      await fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          teamName, 
+          role, 
+          level: puzzle.level,
+          score,
+          timeTaken,
+          solved: isSolved
+        })
+      });
+    } catch (err) {
+      console.error('Failed to save level score:', err);
+    }
+  };
+
+  const handleNext = async () => {
+    setIsSaving(true);
+    await saveLevelScore(true); // they solved it to reach here
+    setIsSaving(false);
     setSolved(false);
     setAnswerInput("");
     advancePuzzle();
+  };
+
+  const handleSkip = async () => {
+    if (window.confirm("Are you sure you want to give up on this puzzle? You will receive 0 points for this level.")) {
+      setIsSaving(true);
+      await saveLevelScore(false);
+      setIsSaving(false);
+      setSolved(false);
+      setAnswerInput("");
+      advancePuzzle();
+    }
   };
 
   return (
@@ -135,8 +195,8 @@ export default function GameHq() {
             </p>
           )}
 
-          <button className="cyber-button" onClick={handleNext} style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}>
-            PROCEED TO NEXT SECTOR
+          <button className="cyber-button" onClick={handleNext} disabled={isSaving} style={{ fontSize: '1.2rem', padding: '1rem 2rem', opacity: isSaving ? 0.7 : 1 }}>
+            {isSaving ? "SAVING..." : "PROCEED TO NEXT SECTOR"}
           </button>
         </div>
       ) : (
@@ -153,7 +213,10 @@ export default function GameHq() {
               onChange={(e) => setAnswerInput(e.target.value)}
               style={{ flex: 1, borderColor: error ? 'var(--accent-red)' : 'var(--accent-cyan)', fontSize: '1.2rem' }}
             />
-            <button type="submit" className="cyber-button" style={{ padding: '0 2rem' }}>
+            <button type="button" onClick={handleSkip} className="cyber-button" disabled={isSaving} style={{ padding: '0 1rem', background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}>
+              SKIP
+            </button>
+            <button type="submit" className="cyber-button" disabled={isSaving} style={{ padding: '0 2rem' }}>
               VERIFY
             </button>
           </div>

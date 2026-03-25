@@ -8,6 +8,7 @@ interface GameState {
   puzzleIndex: number;
   startTime: number | null;
   endTime: number | null;
+  levelStartTime: number | null;
 }
 
 interface GameContextType extends GameState {
@@ -25,6 +26,7 @@ const initialState: GameState = {
   puzzleIndex: 0,
   startTime: null,
   endTime: null,
+  levelStartTime: null,
 };
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
@@ -52,12 +54,14 @@ export function GameProvider({ children }: { children: React.ReactNode }) {
   
   const advancePuzzle = () => setState((s) => ({ 
     ...s, 
-    puzzleIndex: s.puzzleIndex + 1
+    puzzleIndex: s.puzzleIndex + 1,
+    levelStartTime: Date.now()
   }));
 
   const startGame = () => setState((s) => ({ 
     ...s, 
     startTime: s.startTime || Date.now(),
+    levelStartTime: Date.now(),
     endTime: null,
     puzzleIndex: 0,
   }));
