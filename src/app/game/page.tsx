@@ -12,7 +12,6 @@ export default function GameHq() {
   const [error, setError] = useState(false);
   const [solved, setSolved] = useState(false);
   const [finalScore, setFinalScore] = useState<number | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
 
   if (!role) {
     if (typeof window !== 'undefined') {
@@ -71,7 +70,7 @@ export default function GameHq() {
             {finalScore !== null && (
               <div style={{ padding: '1.5rem 3rem', border: '1px solid var(--accent-green)', background: 'rgba(34, 197, 94, 0.1)' }}>
                 <div className="terminal-text" style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '0.5rem', color: 'var(--accent-green)' }}>TEAM_SCORE:</div>
-                <div className="glow-text-green" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{finalScore} / 50 Pts</div>
+                <div className="glow-text-green" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{finalScore} / 25 Pts</div>
               </div>
             )}
           </div>
@@ -97,10 +96,10 @@ export default function GameHq() {
     const timeTaken = levelStartTime ? Math.floor((Date.now() - levelStartTime) / 1000) : 0;
     let score = 0;
     if (isSolved) {
-      if (timeTaken <= 180) score = 5;       // < 3 mins
-      else if (timeTaken <= 300) score = 4;  // < 5 mins
-      else if (timeTaken <= 600) score = 3;  // < 10 mins
-      else score = 2;                        // > 10 mins
+      if (timeTaken <= 180) score = 2.5;       // < 3 mins
+      else if (timeTaken <= 300) score = 2.0;  // < 5 mins
+      else if (timeTaken <= 600) score = 1.5;  // < 10 mins
+      else score = 1.0;                        // > 10 mins
     }
 
     try {
@@ -121,20 +120,20 @@ export default function GameHq() {
     }
   };
 
-  const handleNext = async () => {
-    setIsSaving(true);
-    await saveLevelScore(true); // they solved it to reach here
-    setIsSaving(false);
+  const handleNext = () => {
+    // Save in background
+    saveLevelScore(true);
+    
     setSolved(false);
     setAnswerInput("");
     advancePuzzle();
   };
 
-  const handleSkip = async () => {
+  const handleSkip = () => {
     if (window.confirm("Are you sure you want to give up on this puzzle? You will receive 0 points for this level.")) {
-      setIsSaving(true);
-      await saveLevelScore(false);
-      setIsSaving(false);
+      // Save in background
+      saveLevelScore(false);
+      
       setSolved(false);
       setAnswerInput("");
       advancePuzzle();
@@ -195,8 +194,8 @@ export default function GameHq() {
             </p>
           )}
 
-          <button className="cyber-button" onClick={handleNext} disabled={isSaving} style={{ fontSize: '1.2rem', padding: '1rem 2rem', opacity: isSaving ? 0.7 : 1 }}>
-            {isSaving ? "SAVING..." : "PROCEED TO NEXT SECTOR"}
+          <button className="cyber-button" onClick={handleNext} style={{ fontSize: '1.2rem', padding: '1rem 2rem' }}>
+            PROCEED TO NEXT SECTOR
           </button>
         </div>
       ) : (
@@ -213,10 +212,10 @@ export default function GameHq() {
               onChange={(e) => setAnswerInput(e.target.value)}
               style={{ flex: 1, borderColor: error ? 'var(--accent-red)' : 'var(--accent-cyan)', fontSize: '1.2rem' }}
             />
-            <button type="button" onClick={handleSkip} className="cyber-button" disabled={isSaving} style={{ padding: '0 1rem', background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}>
+            <button type="button" onClick={handleSkip} className="cyber-button" style={{ padding: '0 1rem', background: 'rgba(239, 68, 68, 0.1)', borderColor: 'var(--accent-red)', color: 'var(--accent-red)' }}>
               SKIP
             </button>
-            <button type="submit" className="cyber-button" disabled={isSaving} style={{ padding: '0 2rem' }}>
+            <button type="submit" className="cyber-button" style={{ padding: '0 2rem' }}>
               VERIFY
             </button>
           </div>
