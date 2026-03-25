@@ -1,36 +1,51 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dual Mind Escape
 
-## Getting Started
+A two-player collaborative tech puzzle hunt game built with Next.js, React, and PostgreSQL.
 
-First, run the development server:
+## Features
+- **Co-Op Operative Mode:** Allows two players ("Decoder" and "Analyst") to play simultaneously on separate devices.
+- **Persistent Progress:** The game state is stored locally so players won't lose their place if they refresh the page.
+- **Database Leaderboard:** Automatically logs the completion time and team name into a PostgreSQL database upon finishing the final puzzle.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Local Setup
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+1. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+2. **Setup Environment Variables:**
+   Create a `.env.local` file in the root directory and add your PostgreSQL connection string:
+   ```env
+   DATABASE_URL="postgres://user:password@host:port/database"
+   ```
+   *(Note: The game will still work locally without a database, but it won't save completion times).*
+3. **Run the development server:**
+   ```bash
+   npm run dev
+   ```
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Deployment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This app is built with Next.js App Router and is fully optimized for zero-config deployment to platforms like Vercel or Netlify.
 
-## Learn More
+### Deploying to Vercel (Recommended)
+1. Push your code to a GitHub repository.
+2. Sign in to [Vercel](https://vercel.com/) and click **Add New Project**.
+3. Import your GitHub repository.
+4. **Important:** In the "Environment Variables" section, add a new variable named `DATABASE_URL` and paste your PostgreSQL connection string. (If you don't have one, Vercel offers a free fully-managed Postgres database under the "Storage" tab).
+5. Click **Deploy**.
 
-To learn more about Next.js, take a look at the following resources:
+Vercel will automatically detect that it is a Next.js project and run the build command (`next build`). 
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Deploying to Netlify
+1. Connect your repository to Netlify.
+2. Set the Build Command to `npm run build` and the Publish Directory to `.next`.
+3. Add `DATABASE_URL` in the Environment Variables under "Site Settings".
+4. Deploy the site.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Architecture
+- `src/app/page.tsx`: Landing page containing role selection and team logic.
+- `src/app/game/page.tsx`: Core game engine handling puzzle validation and UI.
+- `src/data/puzzles.ts`: The static puzzles dataset.
+- `src/app/api/scores/route.ts`: API Endpoint hitting PostgreSQL to store victory stats.
+- `src/lib/db.ts`: PostgreSQL Connection Pooling (`pg`).
