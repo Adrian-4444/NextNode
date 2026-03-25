@@ -13,21 +13,23 @@ export async function POST(request: Request) {
       }
 
       if (!process.env.DATABASE_URL) {
-        return NextResponse.json({ success: true, fakeScore: true, teamScore: 42 }); // Fallback if no DB
+        return NextResponse.json({ success: true, fakeScore: true, teamScore: 25 }); // Fallback if no DB
       }
 
       const result = await pool.query(
-        `SELECT SUM(score) as total_score FROM level_scores WHERE team_name = $1`,
+        `SELECT SUM(level_1_score + level_2_score + level_3_score + level_4_score + level_5_score) as total_score 
+         FROM player_progress 
+         WHERE team_name = $1`,
         [teamName]
       );
       
-      const teamScore = result.rows[0].total_score ? parseInt(result.rows[0].total_score) : 0;
+      const teamScore = result.rows[0].total_score ? parseFloat(result.rows[0].total_score) : 0;
       return NextResponse.json({ success: true, teamScore });
     }
 
-    const { teamName, role, level, score, timeTaken, solved } = body;
+    const { teamName, role, level, score } = body;
 
-    if (!teamName || level === undefined || score === undefined) {
+    if (!teamName || !role || level === undefined || score === undefined) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
@@ -36,24 +38,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Database not configured' }, { status: 503 });
     }
 
-    // Ensure tables exist
+    // Ensure table exists
     await pool.query(`
-      CREATE TABLE IF NOT EXISTS level_scores (
-        id SERIAL PRIMARY KEY,
+      CREATE TABLE IF NOT EXISTS player_progress (
         team_name VARCHAR(255) NOT NULL,
-        role VARCHAR(50),
-        level INT NOT NULL,
-        score FLOAT NOT NULL,
-        time_taken_seconds INT NOT NULL,
-        solved BOOLEAN NOT NULL,
-        completed_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+        role VARCHAR(50) NOT NULL,
+        level_1_score FLOAT DEFAULT 0,
+        level_2_score FLOAT DEFAULT 0,
+        level_3_score FLOAT DEFAULT 0,
+        level_4_score FLOAT DEFAULT 0,
+        level_5_score FLOAT DEFAULT 0,
+        PRIMARY KEY (team_name, role)
       );
     `);
 
-    // Insert result
+    // Guard against invalid level inputs to prevent SQL injection or bad columns
+    const validLevels = [1, 2, 3, 4, 5];
+    if (!validLevels.includes(level)) {
+       return NextResponse.json({ error: 'Invalid level' }, { status: 400 });
+    }
+
+    const levelCol = `level_${level}_score`;
+
+    // Upsert logic: Update the specific level column for this player's row
     const result = await pool.query(
-      `INSERT INTO level_scores (team_name, role, level, score, time_taken_seconds, solved) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [teamName, role, level, score, timeTaken || 0, solved || false]
+      `INSERT INTO player_progress (team_name, role, ${levelCol}) 
+       VALUES ($1, $2, $3)
+       ON CONFLICT (team_name, role) 
+       DO UPDATE SET ${levelCol} = EXCLUDED.${levelCol}
+       RETURNING *`,
+      [teamName, role, score]
     );
 
     return NextResponse.json({ success: true, data: result.rows[0] });
