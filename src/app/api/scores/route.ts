@@ -57,6 +57,11 @@ export async function POST(request: Request) {
       );
     `);
 
+    // Safely attempt to migrate existing tables
+    try { await pool.query(`ALTER TABLE player_progress DROP CONSTRAINT IF EXISTS player_progress_pkey CASCADE`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE player_progress ADD COLUMN id SERIAL PRIMARY KEY`); } catch (e) {}
+    try { await pool.query(`ALTER TABLE player_progress ADD COLUMN total_time INT DEFAULT 0`); } catch (e) {}
+
     if (body.action === 'save_final_time') {
       const { teamName, role, totalTime } = body;
       if (!teamName || !role || totalTime === undefined) {
