@@ -27,22 +27,31 @@ export default function GameHq() {
   useEffect(() => {
     if (isComplete && !endTime) {
       finishGame();
+
+      const timeElapsed = startTime ? Math.floor((Date.now() - startTime) / 1000) : 0;
       
+      // Save final total time in seconds
+      fetch('/api/scores', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'save_final_time', teamName, role, totalTime: timeElapsed })
+      }).catch(err => console.error('Failed to save final time:', err));
+
       // Fetch final score
       fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'get_team_score', teamName })
       })
-      .then(res => res.json())
-      .then(data => {
-         if (data.success) {
-           setFinalScore(data.teamScore);
-         }
-      })
-      .catch(err => console.error('Failed to get final score:', err));
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setFinalScore(data.teamScore);
+          }
+        })
+        .catch(err => console.error('Failed to get final score:', err));
     }
-  }, [isComplete, endTime, finishGame, teamName]);
+  }, [isComplete, endTime, finishGame, teamName, role, startTime]);
 
   // Final Success State
   if (isComplete) {
@@ -59,14 +68,14 @@ export default function GameHq() {
         <div className="terminal-text glow-text-cyan" style={{ fontSize: '2rem', background: 'rgba(34, 197, 94, 0.1)', padding: '2rem', borderRadius: '8px', border: '1px solid var(--accent-green)', marginBottom: '2rem' }}>
           MISSION ACCOMPLISHED
         </div>
-        
+
         {endTime && (
           <div style={{ display: 'flex', gap: '2rem', justifyContent: 'center', marginTop: '2rem' }}>
             <div style={{ padding: '1.5rem 3rem', border: '1px dashed var(--accent-cyan)', background: 'rgba(14, 165, 233, 0.1)' }}>
               <div className="terminal-text" style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '0.5rem' }}>COMPLETION_TIME:</div>
               <div className="glow-text-cyan" style={{ fontSize: '2.5rem', fontWeight: 'bold', letterSpacing: '4px' }}>[{minutes}:{seconds}]</div>
             </div>
-            
+
             {finalScore !== null && (
               <div style={{ padding: '1.5rem 3rem', border: '1px solid var(--accent-green)', background: 'rgba(34, 197, 94, 0.1)' }}>
                 <div className="terminal-text" style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '0.5rem', color: 'var(--accent-green)' }}>TEAM_SCORE:</div>
@@ -96,19 +105,19 @@ export default function GameHq() {
     const timeTaken = levelStartTime ? Math.floor((Date.now() - levelStartTime) / 1000) : 0;
     let score = 0;
     if (isSolved) {
-      if (timeTaken <= 180) score = 2.5;       // < 3 mins
-      else if (timeTaken <= 300) score = 2.0;  // < 5 mins
-      else if (timeTaken <= 600) score = 1.5;  // < 10 mins
-      else score = 1.0;                        // > 10 mins
+      if (timeTaken <= 180) score = 5;       // < 3 mins
+      else if (timeTaken <= 300) score = 4;  // < 5 mins
+      else if (timeTaken <= 600) score = 3;  // < 10 mins
+      else score = 2;                        // > 10 mins
     }
 
     try {
       await fetch('/api/scores', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          teamName, 
-          role, 
+        body: JSON.stringify({
+          teamName,
+          role,
           level: puzzle.level,
           score,
           timeTaken,
@@ -123,7 +132,7 @@ export default function GameHq() {
   const handleNext = () => {
     // Save in background
     saveLevelScore(true);
-    
+
     setSolved(false);
     setAnswerInput("");
     advancePuzzle();
@@ -133,7 +142,7 @@ export default function GameHq() {
     if (window.confirm("Are you sure you want to give up on this puzzle? You will receive 0 points for this level.")) {
       // Save in background
       saveLevelScore(false);
-      
+
       setSolved(false);
       setAnswerInput("");
       advancePuzzle();
@@ -157,10 +166,10 @@ export default function GameHq() {
       </p>
 
       {/* Render Puzzle Content */}
-      <div style={{ 
-        background: 'rgba(0,0,0,0.6)', 
-        padding: '2rem', 
-        borderRadius: '8px', 
+      <div style={{
+        background: 'rgba(0,0,0,0.6)',
+        padding: '2rem',
+        borderRadius: '8px',
         fontFamily: 'var(--font-geist-mono), monospace',
         color: 'var(--accent-green)',
         marginBottom: '2rem',
@@ -175,16 +184,16 @@ export default function GameHq() {
       {solved ? (
         <div style={{ marginTop: '2.5rem', padding: '2rem', background: 'rgba(34, 197, 94, 0.1)', border: '1px solid var(--accent-green)', borderRadius: '8px', textAlign: 'center' }}>
           <h2 className="glow-text-green" style={{ marginBottom: '1rem', color: 'var(--accent-green)', textTransform: 'uppercase' }}>ACCESS GRANTED</h2>
-          
+
           {puzzle.outputClue && (
             <p className="terminal-text" style={{ fontSize: '1.1rem', marginBottom: '2rem', color: 'var(--foreground)' }}>
               TRANSMIT THE FOLLOWING TO YOUR PARTNER:
               <br />
               <br />
-              <span className="glow-text-cyan" style={{ 
-                fontSize: '1.5rem', 
-                background: '#000', 
-                padding: '1rem 2rem', 
+              <span className="glow-text-cyan" style={{
+                fontSize: '1.5rem',
+                background: '#000',
+                padding: '1rem 2rem',
                 display: 'inline-block',
                 border: '1px solid var(--accent-cyan)',
                 borderRadius: '4px'
@@ -204,10 +213,10 @@ export default function GameHq() {
             &gt; SUBMIT_DECRYPTION_KEY
           </label>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <input 
-              type="text" 
-              className="cyber-input" 
-              placeholder="Enter answer..." 
+            <input
+              type="text"
+              className="cyber-input"
+              placeholder="Enter answer..."
               value={answerInput}
               onChange={(e) => setAnswerInput(e.target.value)}
               style={{ flex: 1, borderColor: error ? 'var(--accent-red)' : 'var(--accent-cyan)', fontSize: '1.2rem' }}
