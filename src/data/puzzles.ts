@@ -84,7 +84,7 @@ export const PUZZLES: Puzzle[] = [
     description: "We found a fragmented log. Decode this Hexadecimal string.",
     content: "53 65 72 76 65 72 46 61 69 6c 75 72 65 41 74 32 33 3a 30 30",
     answer: "ServerFailureAt23:00",
-    outputClue: "Clue 1: SERVER"
+    outputClue: "Clue 1: SYSTEM"
   },
   {
     id: "l4-b",
@@ -95,7 +95,7 @@ export const PUZZLES: Puzzle[] = [
     description: "Analyze the hex code error log status. What does '0x1A4' represent in decimal?",
     content: "Error code 0x1A4 detected in sector 7G.",
     answer: "420",
-    outputClue: "Clue 2: 23:00"
+    outputClue: "Clue 2: ERROR"
   },
 
   // --- LEVEL 5 (FINAL) ---
