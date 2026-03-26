@@ -80,9 +80,9 @@ export const PUZZLES: Puzzle[] = [
     level: 4,
     role: "A",
     type: "stego",
-    title: "Base64 Fragment",
-    description: "We found a fragmented log. Decode this base64 string.",
-    content: "U2VydmVyRmFpbHVyZUF0MjM6MDA=",
+    title: "Hexadecimal Fragment",
+    description: "We found a fragmented log. Decode this Hexadecimal string.",
+    content: "53 65 72 76 65 72 46 61 69 6c 75 72 65 41 74 32 33 3a 30 30",
     answer: "ServerFailureAt23:00",
     outputClue: "Clue 1: SERVER"
   },
