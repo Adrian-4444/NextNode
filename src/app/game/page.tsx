@@ -79,7 +79,7 @@ export default function GameHq() {
             {finalScore !== null && (
               <div style={{ padding: '1.5rem 3rem', border: '1px solid var(--accent-green)', background: 'rgba(34, 197, 94, 0.1)' }}>
                 <div className="terminal-text" style={{ fontSize: '1.2rem', opacity: 0.8, marginBottom: '0.5rem', color: 'var(--accent-green)' }}>TEAM_SCORE:</div>
-                <div className="glow-text-green" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{finalScore} / 25 Pts</div>
+                <div className="glow-text-green" style={{ fontSize: '2.5rem', fontWeight: 'bold' }}>{finalScore}  Pts</div>
               </div>
             )}
           </div>
